@@ -49,8 +49,18 @@
         cursor: pointer;
     }
     @media print {
-        body { background: #fff; }
-        .botoes, input, select { display: none; }
+    body {
+        background: #fff;
+        font-size: 10px; /* diminui a fonte na impressão */
+    }
+    table {
+        font-size: 10px;
+    }
+    h1 {
+        font-size: 16px;
+    }
+    .botoes, input, select {
+        display: none;
     }
 </style>
 </head>
