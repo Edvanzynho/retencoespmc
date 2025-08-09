@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retenções</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f9f9f9;
+        color: #333;
+    }
+    h1 {
+        text-align: center;
+    }
+    .container {
+        max-width: 800px;
+        margin: auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    th, td {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+    }
+    th {
+        background: #f0f0f0;
+    }
+    .totais {
+        margin-top: 20px;
+        background: #f0f0f0;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .botoes {
+        margin-top: 15px;
+    }
+    button {
+        margin-right: 5px;
+        padding: 8px 15px;
+        cursor: pointer;
+    }
+    @media print {
+        body { background: #fff; }
+        .botoes, input, select { display: none; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>Retenções</h1>
+
+    <label for="campo">Campo:</label>
+    <select id="campo">
+        <option>Banco do Brasil</option>
+        <option>Caixa Econômica</option>
+        <option>IPSEG</option>
+        <option>Prev. JUCATI</option>
+        <option>Uniodonto</option>
+        <option>Prosmed</option>
+        <option>SIMPRO</option>
+        <option>Pensão</option>
+    </select>
+
+    <label for="valor">Valor (R$):</label>
+    <input type="number" id="valor" step="0.01" placeholder="0,00">
+
+    <select id="tipo">
+        <option value="soma">+</option>
+        <option value="subtracao">-</option>
+    </select>
+
+    <div class="botoes">
+        <button onclick="adicionar()">Adicionar</button>
+        <button onclick="desfazer()">Desfazer</button>
+        <button onclick="limpar()">Limpar Tudo</button>
+        <button onclick="window.print()">Imprimir / Salvar PDF</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Campo</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+            </tr>
+        </thead>
+        <tbody id="lista"></tbody>
+    </table>
+
+    <div class="totais">
+        <p>Total Somas: <strong id="totalSoma">R$ 0,00</strong></p>
+        <p>Total Subtrações: <strong id="totalSub">R$ 0,00</strong></p>
+        <p>Total Geral: <strong id="totalGeral">R$ 0,00</strong></p>
+    </div>
+</div>
+
+<script>
+let lancamentos = JSON.parse(localStorage.getItem("retencoes")) || [];
+
+function formatarMoeda(valor) {
+    return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function atualizarTabela() {
+    let lista = document.getElementById("lista");
+    lista.innerHTML = "";
+
+    let totalSoma = 0;
+    let totalSub = 0;
+
+    lancamentos.forEach(item => {
+        let tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${item.campo}</td>
+            <td>${item.tipo === "soma" ? "+" : "-"}</td>
+            <td>${formatarMoeda(item.valor)}</td>
+        `;
+        lista.appendChild(tr);
+
+        if (item.tipo === "soma") {
+            totalSoma += item.valor;
+        } else {
+            totalSub += item.valor;
+        }
+    });
+
+    document.getElementById("totalSoma").textContent = formatarMoeda(totalSoma);
+    document.getElementById("totalSub").textContent = formatarMoeda(totalSub);
+    document.getElementById("totalGeral").textContent = formatarMoeda(totalSoma - totalSub);
+
+    localStorage.setItem("retencoes", JSON.stringify(lancamentos));
+}
+
+function adicionar() {
+    let campo = document.getElementById("campo").value;
+    let valor = parseFloat(document.getElementById("valor").value.replace(",", "."));
+    let tipo = document.getElementById("tipo").value;
+
+    if (isNaN(valor) || valor <= 0) return;
+
+    lancamentos.push({ campo, valor, tipo });
+    atualizarTabela();
+
+    document.getElementById("valor").value = "";
+    document.getElementById("valor").focus();
+}
+
+function desfazer() {
+    lancamentos.pop();
+    atualizarTabela();
+}
+
+function limpar() {
+    if (confirm("Tem certeza que deseja limpar todos os lançamentos?")) {
+        lancamentos = [];
+        atualizarTabela();
+    }
+}
+
+document.getElementById("valor").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        adicionar();
+    }
+});
+
+atualizarTabela();
+</script>
+</body>
+</html>
