@@ -15,7 +15,7 @@
         text-align: center;
     }
     .container {
-        max-width: 800px;
+        max-width: 900px;
         margin: auto;
         background: #fff;
         padding: 20px;
@@ -33,6 +33,7 @@
     }
     th {
         background: #f0f0f0;
+        text-align: left;
     }
     .totais {
         margin-top: 20px;
@@ -47,6 +48,23 @@
         margin-right: 5px;
         padding: 8px 15px;
         cursor: pointer;
+    }
+
+    /* Relatório de impressão (invisível na tela) */
+    .relatorio-impressao {
+        display: none;
+    }
+    .relatorio-impressao h2 {
+        margin: 0 0 6px 0;
+        text-align: center;
+    }
+    .relatorio-impressao small {
+        display: block;
+        text-align: center;
+        margin-bottom: 6px;
+    }
+    .relatorio-impressao table tfoot td {
+        font-weight: bold;
     }
 
     /* Impressão super compacta */
@@ -99,9 +117,9 @@
             margin: 0;
             font-size: 7.5pt;
         }
-        .botoes, input, select, label {
-            display: none !important;
-        }
+        /* Mostrar o resumo e esconder a interface e a tabela detalhada */
+        .relatorio-impressao { display: block !important; }
+        .botoes, .inputs, label, .detalhes { display: none !important; }
     }
 </style>
 </head>
@@ -109,34 +127,36 @@
 <div class="container">
     <h1>Retenções</h1>
 
-    <label for="campo">Campo:</label>
-    <select id="campo">
-        <option>Banco do Brasil</option>
-        <option>Caixa Econômica</option>
-        <option>IPSEG</option>
-        <option>Prev. JUCATI</option>
-        <option>Uniodonto</option>
-        <option>Prosmed</option>
-        <option>SIMPRO</option>
-        <option>Pensão</option>
-    </select>
+    <div class="inputs">
+        <label for="campo">Campo:</label>
+        <select id="campo">
+            <option>Banco do Brasil</option>
+            <option>Caixa Econômica</option>
+            <option>IPSEG</option>
+            <option>Prev. JUCATI</option>
+            <option>Uniodonto</option>
+            <option>Prosmed</option>
+            <option>SIMPRO</option>
+            <option>Pensão</option>
+        </select>
 
-    <label for="valor">Valor (R$):</label>
-    <input type="number" id="valor" step="0.01" placeholder="0,00">
+        <label for="valor">Valor (R$):</label>
+        <input type="number" id="valor" step="0.01" placeholder="0,00">
 
-    <select id="tipo">
-        <option value="soma">+</option>
-        <option value="subtracao">-</option>
-    </select>
+        <select id="tipo">
+            <option value="soma">+</option>
+            <option value="subtracao">-</option>
+        </select>
+    </div>
 
     <div class="botoes">
         <button onclick="adicionar()">Adicionar</button>
         <button onclick="desfazer()">Desfazer</button>
         <button onclick="limpar()">Limpar Tudo</button>
-        <button onclick="window.print()">Imprimir / Salvar PDF</button>
+        <button onclick="imprimir()">Imprimir / Salvar PDF</button>
     </div>
 
-    <table>
+    <table class="detalhes">
         <thead>
             <tr>
                 <th>Campo</th>
@@ -152,9 +172,41 @@
         <p>Total Subtrações: <strong id="totalSub">R$ 0,00</strong></p>
         <p>Total Geral: <strong id="totalGeral">R$ 0,00</strong></p>
     </div>
+
+    <!-- Relatório mostrado só na impressão -->
+    <div class="relatorio-impressao">
+        <h2>Relatório - Retenções</h2>
+        <small id="dataHora"></small>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="resumoCampos"></tbody>
+            <tfoot>
+                <tr>
+                    <td style="text-align:right;">Total geral</td>
+                    <td id="totalGeralRelatorio"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>
 
 <script>
+const CAMPOS_FIXOS = [
+    "Banco do Brasil",
+    "Caixa Econômica",
+    "IPSEG",
+    "Prev. JUCATI",
+    "Uniodonto",
+    "Prosmed",
+    "SIMPRO",
+    "Pensão"
+];
+
 let lancamentos = JSON.parse(localStorage.getItem("retencoes")) || [];
 
 function formatarMoeda(valor) {
@@ -191,6 +243,47 @@ function atualizarTabela() {
     localStorage.setItem("retencoes", JSON.stringify(lancamentos));
 }
 
+function calcularTotaisPorCampo() {
+    const totais = {};
+    // garante todos os campos no mapa, mesmo se 0
+    CAMPOS_FIXOS.forEach(c => totais[c] = 0);
+
+    lancamentos.forEach(item => {
+        const sinal = item.tipo === "soma" ? 1 : -1;
+        if (!(item.campo in totais)) totais[item.campo] = 0;
+        totais[item.campo] += (item.valor * sinal);
+    });
+    return totais;
+}
+
+function prepararRelatorio() {
+    // data/hora
+    document.getElementById("dataHora").textContent =
+        new Date().toLocaleString("pt-BR");
+
+    const tbody = document.getElementById("resumoCampos");
+    tbody.innerHTML = "";
+
+    const totais = calcularTotaisPorCampo();
+
+    let totalGeral = 0;
+    CAMPOS_FIXOS.forEach(campo => {
+        const valor = totais[campo] || 0;
+        totalGeral += valor;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${campo}</td><td>${formatarMoeda(valor)}</td>`;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById("totalGeralRelatorio").textContent = formatarMoeda(totalGeral);
+}
+
+function imprimir() {
+    prepararRelatorio();
+    window.print();
+}
+
 function adicionar() {
     let campo = document.getElementById("campo").value;
     let valor = parseFloat(document.getElementById("valor").value.replace(",", "."));
@@ -222,6 +315,9 @@ document.getElementById("valor").addEventListener("keypress", function(e) {
         adicionar();
     }
 });
+
+// também prepara o relatório quando o usuário usa Ctrl+P / Cmd+P
+window.addEventListener("beforeprint", prepararRelatorio);
 
 atualizarTabela();
 </script>
