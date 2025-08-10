@@ -48,32 +48,60 @@
         padding: 8px 15px;
         cursor: pointer;
     }
-    @media print {
-    body {
-        background: #fff;
-        font-size: 8px; /* fonte geral bem menor */
-        line-height: 1.2;
-    }
-    table {
-        font-size: 8px; /* texto da tabela menor */
-    }
-    h1 {
-        font-size: 12px; /* título reduzido */
-        margin-bottom: 5px;
-    }
-    .totais p {
-        margin: 2px 0;
-        font-size: 8px;
-    }
-    .botoes, input, select {
-        display: none;
-    }
-    .container {
-        padding: 5px; /* menos espaço interno */
-        box-shadow: none;
-    }
-}
 
+    /* Impressão super compacta */
+    @page {
+        size: A4 portrait;
+        margin: 6mm;
+    }
+    @media print {
+        html, body {
+            width: 210mm;
+        }
+        body {
+            background: #fff !important;
+            font-size: 7.5pt;
+            line-height: 1.15;
+            margin: 0;
+        }
+        .container {
+            max-width: none;
+            margin: 0;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        h1 {
+            font-size: 12pt;
+            margin: 0 0 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin-top: 4px;
+        }
+        th, td {
+            padding: 2px 4px;
+            border-bottom: 0.3pt solid #ddd;
+        }
+        th {
+            background: #fff;
+            font-weight: bold;
+        }
+        .totais {
+            margin-top: 6px;
+            padding: 4px;
+            background: transparent;
+            border-radius: 0;
+        }
+        .totais p {
+            margin: 0;
+            font-size: 7.5pt;
+        }
+        .botoes, input, select, label {
+            display: none !important;
+        }
     }
 </style>
 </head>
